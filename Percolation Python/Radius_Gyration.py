@@ -13,13 +13,26 @@ import multiprocessing as mp				#Import necessary libraries
 import numpy as np
 from os import chdir
 import MySQLdb
+import argparse
 
+parser = argparse.ArgumentParser(description='Choose whether percolation identifier function should be called or not.')
+							#Initialise a parsing object
+parser.add_argument('-p', '--percolation-identifier', action='store_const', const=True, default=False, help='Identifies the indices of percolation clusters if used (default is false).')
+							#Add an optional argument augumented with 'python Radius_Gyration.py'
+args = parser.parse_args()				#A variable to store the boolean value of the parser
+
+
+CPU_n = mp.cpu_count()-2				#Number of CPUs to be used for the parallel computing
 filepath = input('Please give the directory path: ')	#Path to the root directory of files
 chdir(filepath)						#Change to the working directory
-Z = np.loadtxt('initial_pos')				#Load the file that contains initial positions of the traces in different simulations
-N = len(Z)-1						#Number of simulations
-CPU_n = 6						#Number of CPUs to be used for the parallel computing
-index_list = range(0,N)					#Index of the files which its range is the number of simulations
+
+if args.percolation_identifier == True:
+	Z = np.loadtxt('initial_pos')			#Load the file that contains initial positions of the traces in different simulations
+	N = len(Z)-1					#Number of simulations
+else:
+	N = input('Please provide the number of clusters to be analysed: ')
+
+
 
 ####################################################################################################################
 ####################################################################################################################
@@ -43,7 +56,7 @@ def percolation_culster_identifier(k):
 ####################################################################################################################
 #Defining a function which calculates the radius of gyration of the cluster in which the diffusion process happens
 def gyration(filename):
-	chdir(filepath)					#Change the working directory to the one where the indices of the cluster are stored
+	chdir(filepath+'percolation_cluster_indices')	#Change the working directory to the one where the indices of the cluster are stored
 	K = np.loadtxt(filename)			#Load the files contain the indices for different simulation instances
 	K = K.reshape(np.product(K.shape)/2,2)		#Reshape the array to 2xN where N is the size of cluster
 	print(filename)
@@ -67,25 +80,51 @@ def sqlWorkerInsert(sql):
 		db = "GyrationRadius")			#The database name in which the data will be stored
 	cursor = conn.cursor()
 	cursor.execute("SET AUTOCOMMIT=1")		#Make the executions to be committed automatically
-	cursor.execute(sql)
+	cursor.execute(sql)				#Execute SQL expressions
 	cursor.close()
-	conn.close()
+	conn.close()					#Close the connection with MySQL server
 ####################################################################################################################
 ####################################################################################################################
-if __name__ == "__main__":
+def main(args, N, CPU_n):
 	files = []
 	for k in range(0,N):
 		files.append('indices_%d' %(k))
 	
-	pool2 = mp.Pool(processes=CPU_n)			#Call the pool method to set the number of processors
-	sql_expr = pool2.map(gyration, files)			#Gather the results from different CPUs and store them in variable 'results'
-	pool2.terminate()					#Terminate pool2
+
+	if args.percolation_identifier == True:
+		index_list = range(0,N)			#Index of the files which its range is the number of simulations
+		pool1 = mp.Pool(processes=CPU_n)	#Call the pool method to set the number of processors
+		pool1.map(percolation_cluster_identifier, index_list)
+							#Extract the percolation clusters indices in a multiprocessing form
+		pool1.close()				#Close pool1
+		pool1.join()				#Concatenate the result
+		pool1.terminate()			#Terminate pool1
+
+		pool2 = mp.Pool(processes=CPU_n)	#Call the pool method to set the number of processors
+		sql_expr = pool2.map(gyration, files)	#Gather the results from different CPUs and store them in variable 'results'
+		pool2.close()
+		pool2.terminate()			#Terminate pool2
 	
+		pool3 = mp.Pool(processes=CPU_n)	#Call the poo3 method to set the number of processors
+		pool3.map(sqlWorkerInsert, sql_expr)	#Call the map method to perform a parallel computation
+		pool3.close()
+		pool3.join()
+		pool3.terminate()			#Terminate pool3
+	else:
+		print('Argument was False')
+		pool2 = mp.Pool(processes=CPU_n)	#Call the pool method to set the number of processors
+		sql_expr = pool2.map(gyration, files)	#Gather the results from different CPUs and store them in variable 'results'
+		pool2.close()
+		pool2.terminate()			#Terminate pool2
 	
-	pool1 = mp.Pool(processes=CPU_n)			#Call the pool method to set the number of processors
-	pool1.map(sqlWorkerInsert, sql_expr)			#Call the map method to perform a parallel computation
-	pool1.close()
-	pool1.join()
-	pool1.terminate()					#Terminate pool1
+		pool3 = mp.Pool(processes=CPU_n)	#Call the pool method to set the number of processors
+		pool3.map(sqlWorkerInsert, sql_expr)	#Call the map method to perform a parallel computation
+		pool3.close()
+		pool3.join()
+		pool3.terminate()			#Terminate pool1
 	
-	chdir(filepath)						#Change the directory to the root working directory
+	chdir(filepath)					#Change the directory to the root working directory
+####################################################################################################################
+####################################################################################################################
+if __name__ == '__main__':
+	main(args, N, CPU_n)
