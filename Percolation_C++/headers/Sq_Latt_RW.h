@@ -48,10 +48,7 @@ int **random_walk(int t, int n, int size, int **board, int latt_num)
 	//if (n<3)										//This if statement dictates to only store 4-first run position of the particle
 	//{
 	//	sprintf(filename,"%s%d%s%d","par_pos_",n,"_",latt_num);				//Naming the "filename" for different run
-		//sprintf(debg_name,"%s%d%s%d","debag_",n,"_",latt_num);																	
 	//	position_file.open(filename);							//Open a text file "par_pos%d.txt" for streaming the particle position
-		//debug_file.open(debg_name);
-		
 	//	position_file << position[0][0] << "\t" << position[0][1] << endl;
 	//}
 
@@ -189,7 +186,7 @@ int **random_walk(int t, int n, int size, int **board, int latt_num)
 		//	position_file << position[i][0] << "\t" << position[i][1] << endl;
 		//}										//Streaming the position of the particle on par_pos.txt
 	}
-	//if(n<3) {position_file.close(); /*debug_file.close();*/}				//Since for only the 4-first runs the stream file is opened
+	//if(n<3) position_file.close();							//Since for only the 4-first runs the stream file is opened
 
 	return position;
 }

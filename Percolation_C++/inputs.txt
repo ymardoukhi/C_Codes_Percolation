@@ -1,0 +1,6 @@
+n 10
+t 100000
+size 4096
+lattice 5
+maxdiv 500
+p 0.0

@@ -7,11 +7,12 @@
 */
 
 /*
-   Returns a vector containing the labels of the clusters
-   @params board The initialised underlying square lattice
-           size The size of the underlying lattice
-	   label_board An empty square lattice to store temporarily the label of each site
-   @return labels A vector containing the labels of the clusters
+   Returns a vector containing the clusters' labels
+   @params -board The initialised underlying square lattice
+           -size The size of the underlying lattice
+	   -label_board An empty square lattice to store temporarily the label of each site
+
+   @return -labels A vector containing the labels of the clusters
            
 */
 //------------BEGIN OF HOSHEN-KOPELMAN FUNC---------//
