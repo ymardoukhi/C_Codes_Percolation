@@ -1,3 +1,14 @@
+#########################################################
+#    A python code to optimise fitting parameters D,    #
+#    h, df and dw for MSD and TAMSD data, for stationa- #
+#    ry and non-stationary case. For the non-stationary #
+#    simultaneouse fitting procedure is implemented.    #
+#    least_square method is used to optimise the parame-#
+#    ters.					  	#
+#########################################################
+#               @author: Yousof Mardoukhi               #
+#               @version: 1.1 19.12.2017                #
+#########################################################
 import numpy as np									#Importing necessary libraries
 import matplotlib.pyplot as plt
 from matplotlib import rc, rcParams, ticker
@@ -98,15 +109,19 @@ def residual_fun_Simultaneous(params, x_data1, y_data1, x_data2, y_data2):
 	D, h, df, dw = params[0], params[1], params[2], params[3]
 	diff1 = y_data1 - fitting_curve_MSD(x_data1, D, h, df, dw)			#The cost function for non-stationary MSD
 	diff2 = y_data2 - fitting_curve_TAMSD(x_data2, D, h, df, dw)			#The cost function for non-stationary TAMSD
-	return np.concatenate((diff1, diff2))						#Concatenate the cost functions for MSD and TAMSD
+	return np.concatenate((diff1, diff2))						#Concatenate the cost functions for MSD and TAMSD, this will later help us to optimise the fitting parameters simultaneously
 ##########################################################
 
-par_initial=[1.0, 1.0, 1.5, 2.6]
-res_val_TAMSD_St = least_squares(residual_fun, par_initial, bounds=([0, 0, 1, 2], [5, 5, 2, 3]), loss='cauchy', args=(TAMSD_St_x, TAMSD_St_y))
-res_val_MSD_St = least_squares(residual_fun, par_initial, bounds=([0, 0, 1, 2], [5, 5, 2, 3]), loss='cauchy', args=(MSD_St_x, MSD_St_y))
+param_initial=[1.0, 1.0, 1.5, 2.6]							#Initial starting points for the fitting parameters (D,h,df,dw)
 
-res_val_Simul = least_squares(residual_fun_Simultaneous, par_initial, bounds=([0, 0, 1, 2], [5, 5, 2, 3]), loss='cauchy', args=(MSD_x, MSD_y, TAMSD_x, TAMSD_y))
-
+res_val_MSD_St = least_squares(residual_fun, param_initial, bounds=([0, 0, 1, 2], [5, 5, 2, 3]), loss='cauchy', args=(MSD_St_x, MSD_St_y))
+											#Optimise (D, h, df, dw) parameters for stationary case using MSD simulation data and the fitting curve
+res_val_Simul = least_squares(residual_fun_Simultaneous, param_initial, bounds=([0, 0, 1, 2], [5, 5, 2, 3]), loss='cauchy', args=(MSD_x, MSD_y, TAMSD_x, TAMSD_y))
+											#Optimise (D, h, df, dw) parameters for the non-stationary case using MSD and TAMSD simulation data simultaneously
+##########################################################
+# Plotting MSD and TAMSD and fitting curve for the stat- #
+# tionary case						 #
+##########################################################
 ax1 = plt.subplot(122)
 ax1.plot(MSD_St_x[0::10000], MSD_St_y[0::10000], marker='^', linestyle='None', markersize= 8, color='k', label='MSD Simulation')
 ax1.plot(TAMSD_St_x[0::10], TAMSD_St_y[0::10], marker='s', linestyle='None', markersize=6, color='k', markerfacecolor='white', label='TAMSD Simulation')
@@ -115,7 +130,10 @@ ax1.xaxis.get_major_formatter().set_powerlimits((0, 1))
 ax1.yaxis.get_major_formatter().set_powerlimits((0, 1))
 ax1.set_xlabel(r'$t, \Delta$')
 plt.legend()
-
+##########################################################
+# Plotting MSD and TAMSD and their respective fitted cur-#
+# ves for the non-stationray case			 #
+##########################################################
 ax2 = plt.subplot(121)
 ax2.plot(MSD_x[0::10000], MSD_y[0::10000], marker='^', linestyle='None', markersize= 8, color='k', label='MSD Simulation')
 ax2.plot(TAMSD_x[0::10], TAMSD_y[0::10], marker='s', linestyle='None', markersize=6, color='k', markerfacecolor='white', label='TAMSD Simulation')
