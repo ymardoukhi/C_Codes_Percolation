@@ -56,35 +56,41 @@ def percolation_culster_identifier(k):
 	# Open a stream file for the purpose of writing on output files
 	index_file = open(output, 'w')
 
-	# A for loop goes through all the cells of the label board and catch those
-	# having the same index as the staring point of the diffusion process
-	for i in range(0, len(X)):
-		for j in range(0, len(X)):
-			if (X[i,j] == X[Z[k,0],Z[k,1]]):
-				index_file.write(str(i) + '\t' + str(j) + '\n')
-	# Close the output file
-	index_file.close()
+	# Find the indices where the the label mathechs the initial label
+        # of the input file
+        ind = np.where(X == X[Z[k, 0], Z[k, 1]]
+        ind = list(zip(ind[0], ind[1]))
+        # save the indices to the output file
+        np.save(output, ind)
 	# Print the name of the output file
 	print(output)
 
-####################################################################################################################
-####################################################################################################################
-#Defining a function which calculates the radius of gyration of the cluster in which the diffusion process happens
+#Defining a function which calculates the radius of gyration of the cluster 
+# in which the diffusion process happens
 def gyration(filename):
-	chdir(filepath+'percolation_cluster_indices')	#Change the working directory to the one where the indices of the cluster are stored
-	K = np.loadtxt(filename)			#Load the files contain the indices for different simulation instances
-	K = K.reshape(np.product(K.shape)/2,2)		#Reshape the array to 2xN where N is the size of cluster
+        #Change the working directory to the one where the indices of the cluster 
+        # are stored
+	chdir(filepath+'percolation_cluster_indices')	
+        #Load the files contain the indices for different simulation instances
+	K = np.load(filename)			
+        #Reshape the array to 2xN where N is the size of cluster
+	K = K.reshape(np.product(K.shape)/2,2)		
 	print(filename)
-	R_2_g_x = 0					#Initiating a variable which stores the square of the radius of gyration x-component
-	R_2_g_y = 0					#Initiating a variable which stores the square of the radius of gyration y-component
-	x_cm = np.sum(K[:,0])/len(K)			#Centre of mass along the x-axis
-	y_cm = np.sum(K[:,1])/len(K)			#Centre of mass along the y-axis
-	for i in range(0, len(K)):			#A for loop to calculate the radius of gyration
-		R_2_g_x = R_2_g_x + (K[i, 0] - x_cm)**2  
-		R_2_g_y = R_2_g_y + (K[i, 1] - y_cm)**2
-	R_g = np.sqrt(1.0/len(K)*(R_2_g_x + R_2_g_y))	#Calculate the square root of R_g_2
-	return """INSERT INTO gyration (cluster_name, cluster_size, cluster_Rg_x, cluster_Rg_y, cluster_Rg, cluster_xcm, cluster_ycm) VALUES ('%s',%d,%f,%f,%f,%f,%f);""" %(filename, len(K), np.sqrt(1.0/len(K)*R_2_g_x), np.sqrt(1.0/len(K)*R_2_g_y), R_g, x_cm, y_cm)
-							#The function returns an expression which shall be later passed to sqlWorkerInsert function to insert the data into the desired database
+        # Calculating the centre of mass along the X and Y-Axis
+	x_cm = np.mean(K[:,0])			
+	y_cm = np.mean(K[:,1])			
+        # Calculating the Radius of Gyration along the X and Y-Axis
+	R_2gX = np.sum((K[i, 0] - x_cm)**2)
+	R_2gY = np.sum((K[i, 1] - y_cm)**2)
+        #Calculate the square root of R_2g
+	R_g = np.sqrt(1.0/len(K)*(R_2gX + R_2gY))	
+        # The function returns an expression which shall be later passed to 
+        # sqlWorkerInsert function to insert the data into the desired database
+	return """INSERT INTO gyration (cluster_name, cluster_size, cluster_Rg_x, 
+                  cluster_Rg_y, cluster_Rg, cluster_xcm, cluster_ycm) 
+                  VALUES ('%s',%d,%f,%f,%f,%f,%f);""" %(filename, len(K), 
+                      np.sqrt(1.0/len(K)*R_2gX), np.sqrt(1.0/len(K)*R_2gY), R_g, x_cm, y_cm)
+
 ####################################################################################################################
 ####################################################################################################################
 #Defining a function which insert the output of the function "gyration" to store the properties of finite size clusters into a database
