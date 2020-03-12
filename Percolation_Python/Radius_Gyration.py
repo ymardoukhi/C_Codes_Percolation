@@ -3,54 +3,69 @@
 #    which the diffusion of the particle happens within #
 #    and calculate the radius of gyration of this very	#
 #    cluster, as well as their centre of mass and store #
-#    them in a database by the means of MySQL		#
+#    them in a database by the means of MySQL library   #
 #########################################################
 #		@author: Yousof Mardoukhi		#
 #		@version: 1.1 14.12.2017		#
 #########################################################
-
-import multiprocessing as mp				#Import necessary libraries
+# Import necessary libraries
+import multiprocessing as mp
 import numpy as np
 from os import chdir
 import MySQLdb
 import argparse
 
+# Initialise a parsing object
 parser = argparse.ArgumentParser(description='Choose whether percolation identifier function should be called or not.')
-							#Initialise a parsing object
-parser.add_argument('-p', '--percolation-identifier', action='store_const', const=True, default=False, help='Identifies the indices of percolation clusters if used (default is false).')
-							#Add an optional argument augumented with 'python Radius_Gyration.py'
-args = parser.parse_args()				#A variable to store the boolean value of the parser
+# Add an optional argument augmented with 'python Radius_Gyration.py'
+# A variable to store the boolean value of the parser
+parser.add_argument('-p', '--percolation-identifier',
+					action='store_const', const=True,
+					default=False, help='Identifies the indices of percolation clusters if used (default is false).')
 
+args = parser.parse_args()
 
-CPU_n = mp.cpu_count()-2				#Number of CPUs to be used for the parallel computing
-filepath = input('Please give the directory path: ')	#Path to the root directory of files
-chdir(filepath)						#Change to the working directory
+# Number of CPUs to be used for the parallel computing
+CPU_n = mp.cpu_count()-2
+# Path to the root directory of files
+filepath = input('Please provide the directory path: ')
+# Change to the working directory
+chdir(filepath)
 
-if args.percolation_identifier == True:
-	Z = np.loadtxt('initial_pos')			#Load the file that contains initial positions of the traces in different simulations
-	N = len(Z)-1					#Number of simulations
+if args.percolation_identifier:
+	# Load the file that contains initial positions of the traces in different simulations
+	Z = np.loadtxt('initial_pos')
+	# Number of simulations
+	N = len(Z)-1
 else:
 	N = input('Please provide the number of clusters to be analysed: ')
 
 
-
-####################################################################################################################
-####################################################################################################################
-#Defining a function which extract the indices of the percolation cluster
+# Defining a function which extract the indices of the percolation cluster
 def percolation_culster_identifier(k):
-	inputfile = 'label_%d' %(k)			#The input file is a file contains inforamtion about the labels of different cluster
-	output = 'indices_%d'  %(k)			#Naming the output file, it simply contains information about the indices of the cluster
-	chdir(filepath+'labelboard')			#Change directory to the one contains the labelling boards
-	X = np.loadtxt(inputfile)			#Load the labelled board
-	chdir(filepath+'percolation_cluster_indices')	#Change the directory to the one where the output files are stored
-	index_file = open(output, 'w')			#Open a stream file for the purpose of writing on output files
+	# The input file is a file contains which information about the labels of different cluster
+	inputfile = 'label_%d' % k
+	# Naming the output file, it simply contains information about the indices of the cluster
+	output = 'indices_%d' % k
+	# Change directory to the one contains the labelling boards
+	chdir(filepath+'labelboard')
+	# Load the labelled board
+	X = np.loadtxt(inputfile)
+	# Change the directory to the one where the output files are stored
+	chdir(filepath+'percolation_cluster_indices')
+	# Open a stream file for the purpose of writing on output files
+	index_file = open(output, 'w')
 
-	for i in range(0,len(X)):			#A for loop goes through all the cells of the label board and catch those having the same index as the staring point of the diffusion process
-		for j in range(0,len(X)):
+	# A for loop goes through all the cells of the label board and catch those
+	# having the same index as the staring point of the diffusion process
+	for i in range(0, len(X)):
+		for j in range(0, len(X)):
 			if (X[i,j] == X[Z[k,0],Z[k,1]]):
 				index_file.write(str(i) + '\t' + str(j) + '\n')
-	index_file.close()				#Close the output file
-	print(output)					#Print the name of the output file
+	# Close the output file
+	index_file.close()
+	# Print the name of the output file
+	print(output)
 
 ####################################################################################################################
 ####################################################################################################################
